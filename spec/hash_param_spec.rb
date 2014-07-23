@@ -14,7 +14,9 @@ describe HashParams do
             hash_as_string:   "{a => 1,b => 2,c => d}",
             proc_validation:  "is_this_valid?",
             some_number:      122,
-            some_string:      'this is a test string'
+            some_string:      'this is a test string'  ,
+            is_true:           'true',
+            is_false:          'f',
         }
     ) do
       param :doesnt_exist, required: true
@@ -34,6 +36,8 @@ describe HashParams do
       param :some_string, min_length: 21, max_length: 30, format: /^t.*g$/
       #combinations
       param :missing_with_validation, coerce: Integer, :default => 60 * 60, :validate => lambda { |v| v >= 60 * 60 }
+      param :is_true, coerce: :boolean
+      param :is_false, coerce: :boolean
     end
   }
 
@@ -50,6 +54,8 @@ describe HashParams do
     r[:array_with_delim].must_equal ["1", "2", "3"]
     r[:hash_as_string].must_equal ({ "a" => "1", "b" => "2", "c" => "d" })
     r[:missing_with_validation].must_equal 60 * 60
+    r[:is_true].must_equal true
+    r[:is_false].must_equal false
 
     #failed items don't show up
     r.errors.size.must_equal 2
