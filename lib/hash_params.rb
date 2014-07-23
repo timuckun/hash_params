@@ -101,8 +101,8 @@ class HashParams < Hash
     #There is no Boolean type so we handle them special
     if type == :boolean || type =='boolean'
       return val if (val == true || val == false)
-      return false if   /(false|f|no|n|0)$/i === val.to_s
-      return true if  /(true|t|yes|y|1)$/i === val.to_s
+      return false if   /(false|f|no|n|0)$/i === val.to_s.downcase
+      return true if  /(true|t|yes|y|1)$/i === val.to_s.downcase
 
       # if we can't parse we return a nil
       # maybe !!val is a better return?
