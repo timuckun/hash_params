@@ -6,11 +6,12 @@ describe HashParams do
   let (:r) {
     HashParams.new(
         {
-            ignored: "this will be ignored because it's not mentioned",
+            ignored:          "this will be ignored because it's not mentioned",
             to_be_renamed:    :to_be_renamed,
             integer_coercion: "1",
             bad_number:       '1aaa2',
             array_with_delim: '1|2|3',
+            hash_as_string:   "{a => 1,b => 2,c => d}",
             proc_validation:  "is_this_valid?",
             some_number:      122,
             some_string:      'this is a test string'
@@ -24,7 +25,9 @@ describe HashParams do
       param :integer_coercion, coerce: Integer
       #chained coersions of various types
       param :bad_number, coerce: [lambda { |o| o.gsub('a', '') }, :to_i, Float]
+      #arrays and hashes
       param :array_with_delim, coerce: Array, delimiter: '|'
+      param :hash_as_string, coerce: Hash, delimiter: ',', separator: '=>'
       param :proc_validation, validate: lambda { |v| v == 'Failed_proc_validation' }
       #validations
       param :some_number, min: 120, max: 500, in: (100..200), is: 122
@@ -45,6 +48,7 @@ describe HashParams do
     r[:bad_number].must_equal 12.0
     #no deep coersion
     r[:array_with_delim].must_equal ["1", "2", "3"]
+    r[:hash_as_string].must_equal ({ "a" => "1", "b" => "2", "c" => "d" })
     r[:missing_with_validation].must_equal 60 * 60
 
     #failed items don't show up

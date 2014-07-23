@@ -10,17 +10,17 @@ with the sinatra specific things taken out and slight modifications to make it m
 ## Example
 
 ``` ruby
-
 describe HashParams do
 
   let (:r) {
     HashParams.new(
         {
-            ignored: "this will be ignored because it's not mentioned",
+            ignored:          "this will be ignored because it's not mentioned",
             to_be_renamed:    :to_be_renamed,
             integer_coercion: "1",
             bad_number:       '1aaa2',
             array_with_delim: '1|2|3',
+            hash_as_string:   "{a => 1,b => 2,c => d}",
             proc_validation:  "is_this_valid?",
             some_number:      122,
             some_string:      'this is a test string'
@@ -34,7 +34,10 @@ describe HashParams do
       param :integer_coercion, coerce: Integer
       #chained coersions of various types
       param :bad_number, coerce: [lambda { |o| o.gsub('a', '') }, :to_i, Float]
+      #arrays and hashes
       param :array_with_delim, coerce: Array, delimiter: '|'
+      param :hash_as_string, coerce: Hash, delimiter: ',', separator: '=>'
+      #procs
       param :proc_validation, validate: lambda { |v| v == 'Failed_proc_validation' }
       #validations
       param :some_number, min: 120, max: 500, in: (100..200), is: 122
@@ -55,6 +58,7 @@ describe HashParams do
     r[:bad_number].must_equal 12.0
     #no deep coersion
     r[:array_with_delim].must_equal ["1", "2", "3"]
+    r[:hash_as_string].must_equal ({ "a" => "1", "b" => "2", "c" => "d" })
     r[:missing_with_validation].must_equal 60 * 60
 
     #failed items don't show up
@@ -66,8 +70,16 @@ describe HashParams do
 
   end
 
-end
+  it 'injects into current class' do
+    r = HashParams.new({will_be_injected: 12345}, self) do
+      param :will_be_injected
+    end
+    r[:will_be_injected].must_equal 12345
+    @will_be_injected.must_equal 12345
+    will_be_injected.must_equal 12345
+  end
 
+end
 
 ```
 
@@ -93,10 +105,12 @@ By declaring parameter types, incoming parameters will automatically be coerced 
 - `Hash` _(key1:value1,key2:value2)_
 - `Date`, `Time`, & `DateTime`
 
-Since Ruby doesn't have a Boolean type use the symbol :boolean.  This will attempt to cast the commonly used values to either true or false (TrueClass or FalseClass)
+Note that the `Hash` and `Array` coercions are not deep (only one level).  The internal elements are not validated or coerced, everything is returned as a string.
+ 
+Since Ruby doesn't have a Boolean type use the symbol :boolean.  This will attempt to cast the commonly used values to either true or false (`TrueClass` or `FalseClass`)
 - `:boolean` _("1/0", "true/false", "t/f", "yes/no", "y/n")_
 
-You can also use anything that will respond to to_proc such as :to_i, :downcase, etc.  It's up to you to make sure the value will obey the method
+You can also use anything that will respond to `to_proc` such as `:to_i`, `:downcase`, etc.  It's up to you to make sure the value will obey the method
 
 
 ### Validations

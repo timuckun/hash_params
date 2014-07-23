@@ -123,7 +123,7 @@ class HashParams < Hash
     return Time.parse(val) if type == Time
     return DateTime.parse(val) if type == DateTime
     return Array(val.split(h[:delimiter] || ',')) if type == Array
-    return Hash[val.split(h[:delimiter] || ',').map { |c| c.split(h[:separator] ||':') }] if type == Hash
+    return Hash[val.gsub(/[{}]/,'').gsub('}','').split(h[:delimiter] || ',').map { |c| c.split(h[:separator] ||':').map{|i| i.strip} }] if type == Hash
 
     nil
   end
