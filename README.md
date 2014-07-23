@@ -1,10 +1,10 @@
 # hash-params
-_Lightweight Parameter Validation & Type Coercion _
+_Lightweight Parameter Validation & Type Coercion_
 
 This is a variation of the sinatra-param gem  https://github.com/mattt/sinatra-param
 with the sinatra specific things taken out and slight modifications to make it more useful for generic applications.
 
-**`hash-param` allows you to declare, validate, and transform endpoint parameters as you would in frameworks like [ActiveModel](http://rubydoc.info/gems/activemodel/3.2.3/frames) or [DataMapper](http://datamapper.org/). but in a lighterweight fashion**
+**`hash-params` allows you to declare, validate, and transform endpoint parameters as you would in frameworks like [ActiveModel](http://rubydoc.info/gems/activemodel/3.2.3/frames) or [DataMapper](http://datamapper.org/). but in a lighterweight fashion**
 
 
 ## Example
