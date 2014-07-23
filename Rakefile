@@ -1,10 +1,11 @@
 require "bundler"
 Bundler.setup
 
-gemspec = eval(File.read("sinatra-param.gemspec"))
+specfile='hash-params.gemspec'
+gemspec = eval(File.read(specfile))
 
 task :build => "#{gemspec.full_name}.gem"
 
-file "#{gemspec.full_name}.gem" => gemspec.files + ["sinatra-param.gemspec"] do
-  system "gem build sinatra-param.gemspec"
+file "#{gemspec.full_name}.gem" => gemspec.files + [specfile] do
+  system "gem build #{specfile}"
 end
