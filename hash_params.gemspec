@@ -2,11 +2,11 @@
 require File.expand_path('../lib/hash_params', __FILE__)
 
 Gem::Specification.new do |s|
-  s.name        = 'hash-params'
+  s.name        = 'hash_params'
   s.license     = 'MIT'
   s.authors     = ['Tim Uckun']
   s.email       = 'tim@uckun.com'
-  s.homepage    = 'https://github.com/timuckun/hash-params'
+  s.homepage    = 'https://github.com/timuckun/hash_params'
   s.version     = HashParams::VERSION
   s.platform    = Gem::Platform::RUBY
   s.summary     = 'Parameter Validation & Type Coercion for parameters passed in as a Hash..'

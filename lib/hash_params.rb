@@ -18,15 +18,7 @@ class HashParams < Hash
 
 
 
-    if block_given?
-      old_incoming_hash = @incoming_hash
-      @incoming_hash = @incoming_hash[key] || {}
 
-      instance_eval(&Proc.new)
-      old_incoming_hash[key] = @incoming_hash
-      @incoming_hash = old_incoming_hash
-
-    end
 
     #What happens if value is  FalseClass ?  Need something a little better
     val = @incoming_hash[key] || @incoming_hash[key.to_sym] || @incoming_hash[key.to_s]
@@ -50,6 +42,13 @@ class HashParams < Hash
       self[var_name]=val
       inject_into_target(@target, var_name, val)
     end
+
+    #after all that see if a block is given and process that
+    if block_given? && val.is_a?(Hash)
+      #Proc.new references the implict block
+      val = HashParams.new(val, nil, &Proc.new)
+    end
+
     val
   rescue => e
     @errors << e.to_s
