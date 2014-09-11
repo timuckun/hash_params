@@ -1,10 +1,7 @@
 class HashParams < Hash
-  VERSION = '0.0.1'
+  VERSION = '0.0.2'
   attr :valid, :errors
 
-  def self.ping
-    'ping'
-  end
   def initialize(opts={}, injection_target =nil, &code)
     @incoming_hash   = opts
     @errors =[]
@@ -15,10 +12,6 @@ class HashParams < Hash
   end
 
   def param(key, h = {})
-
-
-
-
 
     #What happens if value is  FalseClass ?  Need something a little better
     val = @incoming_hash[key] || @incoming_hash[key.to_sym] || @incoming_hash[key.to_s]
@@ -33,7 +26,6 @@ class HashParams < Hash
     Array(h[:coerce]).each do |c|
       val = coerce(val, c, h)
     end
-
 
     #coersion could return a nil which won't validate, it could return a false which will attempt to validate
     if  validate!(val, h)
@@ -153,5 +145,4 @@ class HashParams < Hash
     return true if object.respond_to?(:empty) && object.empty
     return false
   end
-
 end
