@@ -2,6 +2,9 @@ class HashParams < Hash
   VERSION = '0.0.1'
   attr :valid, :errors
 
+  def self.ping
+    'ping'
+  end
   def initialize(opts={}, injection_target =nil, &code)
     @incoming_hash   = opts
     @errors =[]
@@ -13,8 +16,19 @@ class HashParams < Hash
 
   def param(key, h = {})
 
-    #What happens if value is  FalseClass ?  Need something a little better
 
+
+    if block_given?
+      old_incoming_hash = @incoming_hash
+      @incoming_hash = @incoming_hash[key] || {}
+
+      instance_eval(&Proc.new)
+      old_incoming_hash[key] = @incoming_hash
+      @incoming_hash = old_incoming_hash
+
+    end
+
+    #What happens if value is  FalseClass ?  Need something a little better
     val = @incoming_hash[key] || @incoming_hash[key.to_sym] || @incoming_hash[key.to_s]
     if val.nil? && h[:default]
       val = h[:default].respond_to?(:call) ? h[:default].call(self) : h[:default]
