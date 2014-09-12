@@ -6,6 +6,7 @@ with the sinatra specific things taken out and slight modifications to make it m
 
 **`hash-params` allows you to declare, validate, and transform endpoint parameters as you would in frameworks like [ActiveModel](http://rubydoc.info/gems/activemodel/3.2.3/frames) or [DataMapper](http://datamapper.org/). but in a lighterweight fashion**
 
+**NOTE:  Only mentioned and valid entries are returned, all others are ignored**
 
 ## Example
 
@@ -137,7 +138,7 @@ Encapsulate business logic in a consistent way with validations. If a parameter 
 - `min` / `max`
 - `format`
 
-**Only valid entries are returned, all others are ignored**
+
 
 
 ### Exceptions and Validation Failures
