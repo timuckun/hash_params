@@ -3,7 +3,19 @@ require 'yaml'
 require 'erb'
 require 'socket'
 require 'delegate'
+require 'pry'
 
-require 'hash_params/version'
-autoload :HashParams, 'hash_params/hash_params'
-autoload :YamlParams, 'hash_params/yaml_params'
+
+
+
+require_relative 'hash_params/hash_params_validator'
+require_relative 'hash_params/hash_params'
+
+require_relative 'hash_params/version'
+
+#autoload :YamlParams, 'hash_params/yaml_params'
+
+
+
+
+

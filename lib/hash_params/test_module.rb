@@ -1,23 +1,79 @@
-class HashParams
+module TestModule
+  def i
+    puts "#{self.to_s} instance method"
+  end
+
+  def self.c
+    puts "#{self.to_s} class method"
+  end
+
+end
+
+class TestInclude
+  include TestModule
+end
+class TestExtend
+  extend TestModule
+end
+class TestBoth
+  include TestModule
+  extend TestModule
+end
+class TextClassInclude
+  class << self
+    include TestModule
+  end
+end
+
+puts 'class calls----'
+puts
+TestInclude.i rescue puts 'Call Failed'
+TestInclude.c rescue puts 'Call Failed'
+puts
+TestExtend.i rescue puts 'Call Failed'
+TestExtend.c rescue puts 'Call Failed'
+puts
+TestBoth.i rescue puts 'Call Failed'
+TestBoth.c rescue puts 'Call Failed'
+puts
+TextClassInclude.i rescue puts 'Call Failed'
+TextClassInclude.c rescue puts 'Call Failed'
+puts
+puts 'instance call-----'
+puts
+TestInclude.new().i rescue puts 'Call Failed'
+TestInclude.new().c rescue puts 'Call Failed'
+puts
+TestExtend.new().i rescue puts 'Call Failed'
+TestExtend.new().c rescue puts 'Call Failed'
+puts
+TestBoth.new().i rescue puts 'Call Failed'
+TestBoth.new().c rescue puts 'Call Failed'
+puts
+TextClassInclude.new().i rescue puts 'Call Failed'
+TextClassInclude.new().c rescue puts 'Call Failed'
+
+
+
+class HashParamsDelegated < Delegator
 
   ENVIRONMENT = ENV['HASH_PARAMS_ENV'] || (defined?(Rails) && Rails.env) || ENV['RAILS_ENV'] || ENV['RACK_ENV'] || 'development'
 
   extend HashParamsValidator
   attr_accessor :errors, :contents, :invalid_data, :valid_data
 
-  def initialize(incoming_hash={}, opts={})
+  def initialize(opts={}, injection_target = nil)
 
-    @opts           =opts
-    @symbolize_keys = opts.delete :symbolize_keys
-    @make_methods   = opts.delete :make_methods
-    @contents       = @incoming_hash = incoming_hash
-    set_content :hash_params_errors, {}
-    set_content :hash_params_invalid_data, {}
+    #presume all keys are invalid, only subtract the valid ones
+    @contents   = @incoming_hash = @invalid_data = opts
+    inject_into_target @contents,
+                       @errors     = {}
+    @valid_data = {}
 
-    @target = @opts.delete :injection_target
-    if @target
+    if injection_target
       warn '[DEPRECATION] `injection_target` is deprecated. It will be removed from the next version of this gem'
     end
+    @target = injection_target
     # ::Pry.send(:binding).pry
     if block_given?
       warn '[DEPRECATION] Passing blocks into the constructor is deprecated. Please use validate or strictly validate in the future'
@@ -25,31 +81,20 @@ class HashParams
     end
   end
 
-  def to_hash
-    @contents
-  end
-
   def valid?
-    @contents[:hash_params_errors].size == 0
+    @errors.size == 0
   end
 
   def sift(&code)
     #reset the internal hash it will be filled with only the valid values
     @contents={}
-    set_content :hash_params_errors, {}
-    set_content :hash_params_invalid_data, {}
-
     validate(&code)
     @contents
   end
 
-  def set_content(key, value)
-    key = key.to_s.to_sym if @symbolize_keys
-    inject_into_target(@contents, key, value) if @make_methods
-    inject_into_target(@target, key, value) if @target
-    @contents[key]=value
+  def set_key_value(obj, key, value)
+    obj[var_name]=val
   end
-
   def validate_params(&code)
     instance_eval(&code)
     self
@@ -125,6 +170,7 @@ class HashParams
   end
 
 
+
   # # Same as +deep_merge+, but modifies +self+.
   # def self.deep_merge!(other_hash)
   #   other_hash.each_pair do |k, v|
@@ -149,23 +195,20 @@ class HashParams
   # end
 
 
+
+
   def param(key, h = {})
 
     #What happens if value is  FalseClass ?  Need something a little better
     val = @incoming_hash[key] || @incoming_hash[key.to_sym] || @incoming_hash[key.to_s]
 
-    begin
-      #validate raises errors we don't want to catch them
-      val = HashParams.validate(val, h)
-      var_name = h[:as] ? h[:as] : key
-      set_content var_name, val
-    rescue => e
-      @contents[:hash_params_errors].merge!({key: e.to_s})
-    end
     ok, error = validate_value(val, h)
     if ok
       #The value is valid add it
-
+      var_name = h[:as] ? h[:as] : key
+      inject_into_target(@target, var_name, val)
+      @valid_data[key]= val
+      @invalid_data.delete(key)
     else
       @errors[key] = "#{val} failed to validate: #{error}"
     end
@@ -173,11 +216,12 @@ class HashParams
     #after all that see if a block is given and process that
     if block_given? && val.is_a?(Hash)
       #Proc.new references the implict block
-      val = HashParams.new(val).sift(&Proc.new)
+
+      val = HashParams.new(val).strictly_validate(&Proc.new)
       @errors.merge!(val.errors)
     end
 
-    set_content var_name, val
+    set_key_value var_name, val
 
     self
 
@@ -200,9 +244,9 @@ class HashParams
 
   def validate_value(param, options ={})
     #returns [bool, error]
-    [true, HashParams.validate(param, options)]
+    HashParams.validate(param, options)
   rescue => e
-    [false, e]
+    nil
   end
 
 end
