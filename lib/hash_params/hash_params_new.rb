@@ -1,4 +1,4 @@
-class HashParams
+class HashParamsNew
 
   ENVIRONMENT = ENV['HASH_PARAMS_ENV'] || (defined?(Rails) && Rails.env) || ENV['RAILS_ENV'] || ENV['RACK_ENV'] || 'development'
 
@@ -57,11 +57,11 @@ class HashParams
 
   #these are convience methods
   def from_yaml_file(filename, env=ENVIRONMENT)
-    initialize(HashParams.from_yaml_file(filename, env))
+    initialize(HashParamsNew.from_yaml_file(filename, env))
   end
 
   def autoconfigure
-    initialize(HashParams.autoconfigure((app_name='', env=ENVIRONMENT, roots=nil, file_separator='_', file_extension='yml')))
+    initialize(HashParamsNew.autoconfigure((app_name='', env=ENVIRONMENT, roots=nil, file_separator='_', file_extension='yml')))
   end
 
   def self.from_yaml_file(filename, env=ENVIRONMENT)
@@ -107,7 +107,7 @@ class HashParams
 
     all_roots.each do |root|
       base_file_names.each do |fname|
-        h = HashParams::deep_merge(h, from_yaml_file(File.join(root, fname)))
+        h = HashParamsNew::deep_merge(h, from_yaml_file(File.join(root, fname)))
       end
     end
     h
@@ -156,7 +156,7 @@ class HashParams
 
     begin
       #validate raises errors we don't want to catch them
-      val = HashParams.validate(val, h)
+      val = HashParamsNew.validate(val, h)
       var_name = h[:as] ? h[:as] : key
       set_content var_name, val
     rescue => e
@@ -173,7 +173,7 @@ class HashParams
     #after all that see if a block is given and process that
     if block_given? && val.is_a?(Hash)
       #Proc.new references the implict block
-      val = HashParams.new(val).sift(&Proc.new)
+      val = HashParamsNew.new(val).sift(&Proc.new)
       @errors.merge!(val.errors)
     end
 
@@ -200,7 +200,7 @@ class HashParams
 
   def validate_value(param, options ={})
     #returns [bool, error]
-    [true, HashParams.validate(param, options)]
+    [true, HashParamsNew.validate(param, options)]
   rescue => e
     [false, e]
   end

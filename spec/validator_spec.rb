@@ -1,8 +1,8 @@
 require_relative 'spec_helper'
 
 
-describe HashParams::Validator do
-  let(:v) { HashParams::Validator }
+describe HashParamsNew::Validator do
+  let(:v) { HashParamsNew::Validator }
   # let (:r) {
   #   HashParamsClass.new(
   #       {
@@ -49,7 +49,7 @@ describe HashParams::Validator do
   it 'raises error if required and missing' do
     proc {
       v.validate(nil, required: true)
-    }.must_raise HashParams::ValidationError
+    }.must_raise HashParamsNew::ValidationError
   end
   it 'runs multiple coersions' do
     v.validate('1aaa2', coerce: [lambda { |o| o.gsub('a', '') }, :to_i, Float]).must_equal 12.0
@@ -69,7 +69,7 @@ describe HashParams::Validator do
       v.validate('is_this_valid?') do |v|
         v == 'Failed_proc_validation'
       end
-    }.must_raise HashParams::ValidationError
+    }.must_raise HashParamsNew::ValidationError
   end
 
   it 'verifies numbers with common params' do

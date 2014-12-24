@@ -1,10 +1,10 @@
 require_relative 'spec_helper'
 
 
-describe HashParams do
+describe HashParamsNew do
 
   let (:r) {
-    HashParams.new(
+    HashParamsNew.new(
         {
             ignored:          "this will be ignored because it's not mentioned",
             to_be_renamed:    :to_be_renamed,
@@ -75,7 +75,7 @@ describe HashParams do
   end
 
   it 'injects into current class' do
-    r = HashParams.new({will_be_injected: 12345}, self) do
+    r = HashParamsNew.new({will_be_injected: 12345}, self) do
       param :will_be_injected
     end
     r[:will_be_injected].must_equal 12345

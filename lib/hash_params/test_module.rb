@@ -102,11 +102,11 @@ class HashParamsDelegated < Delegator
 
   #these are convience methods
   def from_yaml_file(filename, env=ENVIRONMENT)
-    initialize(HashParams.from_yaml_file(filename, env))
+    initialize(HashParamsNew.from_yaml_file(filename, env))
   end
 
   def autoconfigure
-    initialize(HashParams.autoconfigure((app_name='', env=ENVIRONMENT, roots=nil, file_separator='_', file_extension='yml')))
+    initialize(HashParamsNew.autoconfigure((app_name='', env=ENVIRONMENT, roots=nil, file_separator='_', file_extension='yml')))
   end
 
   def self.from_yaml_file(filename, env=ENVIRONMENT)
@@ -152,7 +152,7 @@ class HashParamsDelegated < Delegator
 
     all_roots.each do |root|
       base_file_names.each do |fname|
-        h = HashParams::deep_merge(h, from_yaml_file(File.join(root, fname)))
+        h = HashParamsNew::deep_merge(h, from_yaml_file(File.join(root, fname)))
       end
     end
     h
@@ -217,7 +217,7 @@ class HashParamsDelegated < Delegator
     if block_given? && val.is_a?(Hash)
       #Proc.new references the implict block
 
-      val = HashParams.new(val).strictly_validate(&Proc.new)
+      val = HashParamsNew.new(val).strictly_validate(&Proc.new)
       @errors.merge!(val.errors)
     end
 
@@ -244,7 +244,7 @@ class HashParamsDelegated < Delegator
 
   def validate_value(param, options ={})
     #returns [bool, error]
-    HashParams.validate(param, options)
+    HashParamsNew.validate(param, options)
   rescue => e
     nil
   end

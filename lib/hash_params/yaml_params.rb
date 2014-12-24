@@ -1,8 +1,7 @@
-class YamlParams
+class YamlParams < HashParamsNew
 
-  ENVIRONMENT = ENV['HASH_PARAMS_ENV'] || (defined?(Rails) && Rails.env) || ENV['RAILS_ENV'] || ENV['RACK_ENV'] || 'development'
 
-  def initialize(file_name = nil)
+  def initialize(file_name = nil,environment = nil, )
     if file_name
       YamlParams.from_yaml_file file_name
     else
