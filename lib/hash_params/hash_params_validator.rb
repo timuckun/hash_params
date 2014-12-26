@@ -5,30 +5,83 @@ module HashParamsValidator
   class CoercionError < StandardError
   end
 
-  def validate(param, options ={})
+  def set_key_value(obj, key, value, opts={})
+    raise "#{obj} must be a hash" unless obj.is_a?(Hash)
+    key = key.to_s.to_sym if opts[:symbolize_key]
+    inject_into_target(obj, key, value) if opts[:make_method]
+    obj[key]=value
+  end
+
+
+  def inject_into_target(target, var_name, val)
+    #only do read
+    target.singleton_class.module_eval do
+      define_method var_name.to_s.to_sym do
+        val
+      end
+    end
+
+    # if target
+    #   #for read write methods
+    #   target.singleton_class.class_eval do
+    #     attr_accessor var_name;
+    #   end
+    #   target.send("#{var_name}=", val)
+    # end
+  end
+
+
+  def validate_hash(incoming_hash, validations={}, opts={})
+
+    clean_hash={}
+    errors    = {}
+
+    validations.each do |hash_key, validation|
+      begin
+        value = incoming_hash[hash_key]
+        value = if value.is_a?(Hash)
+                  validate_hash(value, validation, opts)
+                else
+                  validate(value, validation)
+                end
+
+        set_key_value(clean_hash, hash_key, value, opts)
+      rescue => e
+        errors[hash_key] = e.to_s
+      end
+    end
+
+    valid = errors.empty?
+    raise "Validation errors: #{errors.inspect}" if opts[:raise_errors] && !valid
+    inject_into_target clean_hash, :valid?, valid
+    inject_into_target clean_hash, :errors, errors
+    clean_hash
+  end
+
+  def validate(param, validations ={}, options={})
     #returns [bool, error]
 
-    if param.nil? && options[:default]
-      param = options[:default].respond_to?(:call) ? options[:default].call(self) : options[:default]
+    if param.nil? && validations[:default]
+      param = validations[:default].respond_to?(:call) ? validations[:default].call(self) : validations[:default]
     end
 
     if block_given?
-      return param if yield(param, options)
+      return param if yield(param, validations)
       #if the block didn't return a true value raise the error
       raise ValidationError.new("Unable to validate #{param} with given block")
     end
 
     #don't bother with the rest if required parameter is missing
-    if options[:required] && param.nil?
+    if validations[:required] && param.nil?
       raise ValidationError.new('Required Parameter missing and has no default specified')
     end
     #do all coercion and transformation first there could be an array of coersions they will be run in order
 
-    Array(options[:coerce]).each do |c|
-      param = coerce(param, c, options)
+    Array(validations[:coerce]).each do |c|
+      param = coerce(param, c, validations)
     end
     error = nil
-    options.each do |key, value|
+    validations.each do |key, value|
 
       error = case key
                 when :validate
