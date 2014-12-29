@@ -204,8 +204,15 @@ class HashParams
   end
 
 
-  def self.hash_from_default_yaml_files(app_name='', env=ENVIRONMENT, roots=nil, file_separator='_', file_extension='yml')
-    h        ={}
+  def self.hash_from_default_yaml_files(app_name=nil, env=nil, roots=nil, file_separator=nil, file_extension=nil)
+    #if a nil is passed in we still use the defaults
+    app_name       ||= ''
+    env            ||= ENVIRONMENT
+    roots          ||= nil
+    file_separator ||= '_'
+    file_extension ||= 'yml'
+
+    h        = {}
     home_dir = File.expand_path('~')
     hostname = Socket.gethostname
 
@@ -217,22 +224,32 @@ class HashParams
     #{hostname}#{file_separator}#{env}.#{file_extension}
         local.#{file_extension}
         local#{file_separator}#{env}.#{file_extension}
+        settings.local.#{file_extension}
+        settings.local#{file_separator}#{env}.#{file_extension}
+        config.local.#{file_extension}
+        config.local#{file_separator}#{env}.#{file_extension}
     #{app_name}#{file_separator}settings.#{file_extension}
+    #{app_name}#{file_separator}config.#{file_extension}
     #{app_name}#{file_separator}default.#{file_extension}
     #{app_name}#{file_separator}#{env}.#{file_extension}
     #{app_name}#{file_separator}#{hostname}.#{file_extension}
     #{app_name}#{file_separator}#{hostname}#{file_separator}#{env}.#{file_extension}
     #{app_name}#{file_separator}local.#{file_extension}
     #{app_name}#{file_separator}local#{file_separator}#{env}.#{file_extension}
+    #{app_name}#{file_separator}settings.local.#{file_extension}
+    #{app_name}#{file_separator}settings.local#{file_separator}#{env}.#{file_extension}
+    #{app_name}#{file_separator}config.local.#{file_extension}
+    #{app_name}#{file_separator}config.local#{file_separator}#{env}.#{file_extension}
 
     )
 
     all_roots       = Array(roots) if roots
     all_roots       ||= [
+        Dir.pwd,
         File.join('/etc', app_name.to_s),
         File.join('/usr', 'local', 'etc', app_name.to_s),
         File.join(home_dir, 'etc', app_name.to_s),
-        File.join(home_dir, '.yaml_params', app_name.to_s),
+        File.join(home_dir, '.hash_params', app_name.to_s),
         File.join(Dir.pwd, 'config'),
         File.join(Dir.pwd, 'settings')
     ]
@@ -248,7 +265,6 @@ class HashParams
     end
     h
   end
-
 
 
   def self.deep_merge(hash, other_hash)
