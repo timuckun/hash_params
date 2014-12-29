@@ -183,6 +183,11 @@ class HashParams
     raise CoercionError("Unable to  coerce #{val} to #{type}")
   end
 
+  class << self
+    alias_method :autoconfigure, :validate_default_yaml_files
+    alias_method :param, :validate
+  end
+
   private
 
   def self.present?(object)
@@ -197,6 +202,7 @@ class HashParams
     r = File.exists?(filename) ? YAML::load(ERB.new(File.read(filename)).result) : {}
     r[env] || r
   end
+
 
   def self.hash_from_default_yaml_files(app_name='', env=ENVIRONMENT, roots=nil, file_separator='_', file_extension='yml')
     h        ={}
@@ -237,11 +243,13 @@ class HashParams
     all_roots.each do |root|
       base_file_names.each do |fname|
         file = File.join(root, fname)
-        h = deep_merge(h, hash_from_yaml_file(file))  if  File.exists?(file)
+        h    = deep_merge(h, hash_from_yaml_file(file)) if File.exists?(file)
       end
     end
     h
   end
+
+
 
   def self.deep_merge(hash, other_hash)
     if other_hash.is_a?(::Hash) && hash.is_a?(::Hash)

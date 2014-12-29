@@ -36,7 +36,7 @@ with the sinatra specific things taken out and slight modifications to make it m
  You can also use anything that will respond to `to_proc` such as `:to_i`, `:downcase`, etc.  It's up to you to make sure the value will obey the method
 
 
-## Validation Options
+## Validation Options (Only applies to validating hashes and yaml files)
 
  You can pass in the following options along with your validations
 
