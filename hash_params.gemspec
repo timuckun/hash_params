@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../lib/hash_params/version', __FILE__)
+require File.expand_path('../lib/hash_params', __FILE__)
 
 Gem::Specification.new do |s|
   s.name        = 'hash_params'
@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.authors     = ['Tim Uckun']
   s.email       = 'tim@uckun.com'
   s.homepage    = 'https://github.com/timuckun/hash_params'
-  s.version     = HASH_PARAMS_VERSION
+  s.version     = HashParams::VERSION
   s.platform    = Gem::Platform::RUBY
   s.summary     = 'Parameter Validation & Type Coercion for parameters passed in as a Hash..'
   s.description = 'hash-param allows you to declare, validate, and transform endpoint parameters as you would in frameworks like ActiveModel or DataMapper without the overhead.
