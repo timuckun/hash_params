@@ -4,9 +4,9 @@ _Lightweight Parameter Validation & Type Coercion_
 This is a variation of the sinatra-param gem  https://github.com/mattt/sinatra-param
 with the sinatra specific things taken out and slight modifications to make it more useful for generic applications.
 
-**`hash-params` allows you to declare, validate, and transform endpoint parameters as you would in frameworks like [ActiveModel](http://rubydoc.info/gems/activemodel/3.2.3/frames) or [DataMapper](http://datamapper.org/). but in a lighterweight fashion **
+`hash-params` allows you to declare, validate, and transform endpoint parameters as you would in frameworks like [ActiveModel](http://rubydoc.info/gems/activemodel/3.2.3/frames) or [DataMapper](http://datamapper.org/). but in a lighterweight fashion
 
-** See the spec down the page for usage scenarios **
+ See the spec down the page for usage scenarios
 
 ## Validations
 
@@ -26,11 +26,12 @@ with the sinatra specific things taken out and slight modifications to make it m
  - `Array` _("1,2,3,4,5")_
  - `Hash` _(key1:value1,key2:value2)_
  - `Date`, `Time`, & `DateTime`
+ - `:boolean` _("1/0", "true/false", "t/f", "yes/no", "y/n")_
+
 
  Note that the `Hash` and `Array` coercions are not deep (only one level).  The internal elements are not validated or coerced, everything is returned as a string.
 
  Since Ruby doesn't have a Boolean type use the symbol :boolean.  This will attempt to cast the commonly used values to either true or false (`TrueClass` or `FalseClass`)
- - `:boolean` _("1/0", "true/false", "t/f", "yes/no", "y/n")_
 
  You can also use anything that will respond to `to_proc` such as `:to_i`, `:downcase`, etc.  It's up to you to make sure the value will obey the method
 
