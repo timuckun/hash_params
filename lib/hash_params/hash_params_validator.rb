@@ -30,11 +30,38 @@ module HashParamsValidator
     # end
   end
 
+  def validate_yaml_file(filename, validations={}, opts={})
+    env=opts.delete(:env) || opts.delete(:environment) || ENVIRONMENT
+    h  = hash_from_yaml_file(filename, env)
+    validate_hash(h, validations, opts)
+  end
+
+  def validate_default_yaml_files(validations={}, opts={})
+    app_name       =opts.delete(:app_name)
+    env            =opts.delete(:env) || opts.delete(:environment) || ENVIRONMENT
+    roots          = opts.delete(:roots)
+    file_separator = opts.delete(file_separator)
+    file_extension = opts.delete(:file_extension)
+    h = hash_from_default_yaml_files(app_name, env, roots, file_separator, file_extension)
+    validate_hash(h, validations, opts)
+  end
 
   def validate_hash(incoming_hash, validations={}, opts={})
+    #default is to raise errors
+    raise_errors = opts[:raise_errors].nil? ? true : opts[:raise_errors]
 
-    clean_hash={}
-    errors    = {}
+    #default is strict but if they don't specify strict and the validations are empty then it's false
+    strict       = if opts[:strict]
+                     opts[:strict]
+                   elsif validations.empty?
+                     false
+                   else
+                     true
+                   end
+
+    clean_hash  = {}
+    errors_hash = {}
+
 
     validations.each do |hash_key, validation|
       begin
@@ -47,19 +74,30 @@ module HashParamsValidator
 
         set_key_value(clean_hash, hash_key, value, opts)
       rescue => e
-        errors[hash_key] = e.to_s
+        set_value(errors_hash, hash_key, e.to_s, opts)
       end
     end
-
-    valid = errors.empty?
-    raise "Validation errors: #{errors.inspect}" if opts[:raise_errors] && !valid
-    inject_into_target clean_hash, :valid?, valid
-    inject_into_target clean_hash, :errors, errors
-    clean_hash
+    valid       = errors.empty?
+    return_hash = if strict
+                    clean_hash
+                  else
+                    incoming_hash.merge(clean_hash)
+                  end
+    raise "Validation errors: #{errors_hash.inspect}" if raise_errors && !valid
+    inject_into_target return_hash, :valid?, valid
+    inject_into_target return_hash, :errors, errors
+    return_hash
   end
 
-  def validate(param, validations ={}, options={})
-    #returns [bool, error]
+
+  def strictly_validate_hash(incoming_hash, validations={}, opts={})
+    opts[:strict] = true
+    validate_hash(incoming_hash, validations, opts)
+  end
+
+  def validate(param, validations={}, options={})
+    #NOTE  if validations is nil then it gets coerced into an empty hash
+    #      The consequence of this is that the value gets passed back unchanged
 
     if param.nil? && validations[:default]
       param = validations[:default].respond_to?(:call) ? validations[:default].call(self) : validations[:default]
@@ -89,20 +127,20 @@ module HashParamsValidator
                 when :blank
                   'Parameter cannot be blank' if !value && blank?(param)
                 when :format
-                  'Parameter must be a string if using the format validation' && next unless param.kind_of?(String)
-                  "Parameter must match format #{value}" unless param =~ value
+                  "#{param} must be a string if using the format validation" && next unless param.kind_of?(String)
+                  "#{param} must match format #{value}" unless param =~ value
                 when :is
-                  "Parameter must be #{value}" unless param === value
+                  "#{param} must be #{value}" unless param === value
                 when :in, :within, :range
-                  "Parameter must be within #{value}" unless value.respond_to?(:include) ? value.include?(param) : Array(value).include?(param)
+                  "#{param} must be within #{value}" unless value.respond_to?(:include) ? value.include?(param) : Array(value).include?(param)
                 when :min
-                  "Parameter cannot be less than #{value}" unless value <= param
+                  "#{param} cannot be less than #{value}" unless value <= param
                 when :max
-                  "Parameter cannot be greater than #{value}" unless value >= param
+                  "#{param} cannot be greater than #{value}" unless value >= param
                 when :min_length
-                  "Parameter cannot have length less than #{value}" unless value <= param.length
+                  "#{param} cannot have length less than #{value}" unless value <= param.length
                 when :max_length
-                  "Parameter cannot have length greater than #{value}" unless value >= param.length
+                  "#{param} cannot have length greater than #{value}" unless value >= param.length
                 else
                   nil
               end
@@ -162,6 +200,67 @@ module HashParamsValidator
   def blank?(object)
     object.nil? || (object.respond_to?(:empty) && object.empty)
   end
+
+  def hash_from_yaml_file(filename, env=ENVIRONMENT)
+    r = File.exists?(filename) ? YAML::load(ERB.new(File.read(filename)).result) : {}
+    r[env] || r
+  end
+
+  def hash_from_default_yaml_files(app_name='', env=ENVIRONMENT, roots=nil, file_separator='_', file_extension='yml')
+    h        ={}
+    home_dir = File.expand_path('~')
+    hostname = Socket.gethostname
+
+    base_file_names = %W(
+        settings.#{file_extension}
+        default.#{file_extension}
+    #{env}.#{file_extension}
+    #{hostname}.#{file_extension}
+    #{hostname}#{file_separator}#{env}.#{file_extension}
+        local.#{file_extension}
+        local#{file_separator}#{env}.#{file_extension}
+    #{app_name}#{file_separator}settings.#{file_extension}
+    #{app_name}#{file_separator}default.#{file_extension}
+    #{app_name}#{file_separator}#{env}.#{file_extension}
+    #{app_name}#{file_separator}#{hostname}.#{file_extension}
+    #{app_name}#{file_separator}#{hostname}#{file_separator}#{env}.#{file_extension}
+    #{app_name}#{file_separator}local.#{file_extension}
+    #{app_name}#{file_separator}local#{file_separator}#{env}.#{file_extension}
+
+    )
+
+    all_roots       = Array(roots) if roots
+    all_roots       ||= [
+        File.join('/etc', app_name.to_s),
+        File.join('/usr', 'local', 'etc', app_name.to_s),
+        File.join(home_dir, 'etc', app_name.to_s),
+        File.join(home_dir, '.yaml_params', app_name.to_s),
+        File.join(Dir.pwd, 'config'),
+        File.join(Dir.pwd, 'settings')
+    ]
+    if defined?(Rails)
+      all_roots << Rails.root.join('config')
+    end
+
+    all_roots.each do |root|
+      base_file_names.each do |fname|
+        h = deep_merge(h, hash_from_yaml_file(File.join(root, fname)))
+      end
+    end
+    h
+  end
+
+  def deep_merge(hash, other_hash)
+    if other_hash.is_a?(::Hash) && hash.is_a?(::Hash)
+      other_hash.each do |k, v|
+        hash[k] = hash.key?(k) ? deep_merge(hash[k], v) : v
+      end
+      hash
+    else
+      other_hash
+    end
+  end
+
 end
 
 
