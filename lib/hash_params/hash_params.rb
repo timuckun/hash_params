@@ -56,7 +56,7 @@ class HashParams
         set_value(errors_hash, hash_key, e.to_s, opts)
       end
     end
-    valid       = errors.empty?
+    valid       = errors_hash.empty?
     return_hash = if strict
                     clean_hash
                   else
@@ -64,7 +64,7 @@ class HashParams
                   end
     raise "Validation errors: #{errors_hash.inspect}" if raise_errors && !valid
     inject_into_target return_hash, :valid?, valid
-    inject_into_target return_hash, :errors, errors
+    inject_into_target return_hash, :errors, errors_hash
     return_hash
   end
 
