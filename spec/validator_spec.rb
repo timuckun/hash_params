@@ -51,12 +51,13 @@ describe HashParams do
     v.coerce('0',:boolean).must_equal false
     v.coerce(0,:boolean).must_equal false
   end
+
   it 'coerces array' do
    v.coerce('1|2|3', Array, delimiter: '|').must_equal ["1", "2", "3"]
   end
+
   it 'coerces hash' do
     v.coerce('{a => 1,b => 2,c => d}', Hash, delimiter: ',', separator: '=>').must_equal({"a" => "1", "b" => "2", "c" => "d"})
   end
-
 
 end
