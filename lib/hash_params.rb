@@ -39,6 +39,8 @@ class HashParams < Hash
     if block_given? && val.is_a?(Hash)
       #Proc.new references the implict block
       val = HashParams.new(val, nil, &Proc.new)
+      var_name      = h[:as] ? h[:as] : key
+      self[var_name]=val
     end
 
     val
