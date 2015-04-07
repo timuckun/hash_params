@@ -56,6 +56,7 @@ class HashParams
       value   = HashParams.validate(@incoming[key], opts)
       new_key = opts[:as] || key
       set_key_value new_key, value, opts[:as]
+        binding.pry
     rescue => e
       @outgoing.validation_errors[key] = [e.to_s, e.backtrace].join("\n")
       raise e if @options[:raise_errors]
