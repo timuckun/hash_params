@@ -4,7 +4,7 @@ require_relative 'spec_helper'
 describe HashParams do
 
   let (:r) {
-    HashParams.validate_hash(
+    HashParams.validate(
         {
             ignored:          "this will be ignored because it's not mentioned",
             to_be_renamed:    :to_be_renamed,

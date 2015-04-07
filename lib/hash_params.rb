@@ -16,8 +16,6 @@ class HashParams
   class CoercionError < StandardError
   end
 
-
-
   def validate_hash(h, options={})
     #Hash Validation has to be stateful
 
@@ -73,16 +71,6 @@ class HashParams
   end
 
 
-  # def inject_into_target(target, var_name, val)
-  #   if target
-  #     #for read write methods
-  #     target.singleton_class.class_eval do
-  #       attr_accessor var_name;
-  #     end
-  #     target.send("#{var_name}=", val)
-  #   end
-  # end
-
   def inject_into_target(target, var_name, val)
     #only do read
     target.singleton_class.module_eval do
@@ -94,64 +82,6 @@ class HashParams
 
   ##### CLass methods
   class << self
-    # @incoming_hash = {}
-
-
-    # def validate_hash(incoming_hash, validations={}, opts={})
-    #   #default is to raise errors
-    #   raise_errors = opts[:raise_errors].nil? ? true : opts[:raise_errors]
-    #
-    #   #default is strict but if they don't specify strict and the validations are empty then it's false
-    #   strict       = if opts[:strict]
-    #                    opts[:strict]
-    #                  elsif validations.empty?
-    #                    false
-    #                  else
-    #                    true
-    #                  end
-    #
-    #   clean_hash  = {}
-    #   errors_hash = {}
-    #
-    #
-    #   validations.each do |hash_key, validation|
-    #     begin
-    #       value        = incoming_hash[hash_key]
-    #       new_hash_key = opts[:symbolize_key] ? hash_key.to_s.to_sym : hash_key
-    #       value        = if value.is_a?(Hash)
-    #                        validate_hash(value, validation, opts)
-    #                      else
-    #                        validate(value, validation)
-    #                      end
-    #
-    #       clean_hash[new_hash_key] = value
-    #     rescue => e
-    #       errors_hash[new_hash_key]= e.to_s
-    #     end
-    #   end
-    #   valid       = errors_hash.empty?
-    #   return_hash = if strict
-    #                   clean_hash
-    #                 else
-    #                   incoming_hash.merge(clean_hash)
-    #                 end
-    #   raise "Validation errors: #{errors_hash.inspect}" if raise_errors && !valid
-    #   inject_into_target return_hash, :valid?, valid
-    #   inject_into_target return_hash, :errors, errors_hash
-    #   if opts[:make_methods]
-    #     return_hash.each do |k, v|
-    #       inject_into_target(return_hash, k, v)
-    #     end
-    #   end
-    #   return_hash
-    # end
-    #
-    #
-    # def strictly_validate_hash(incoming_hash, validations={}, opts={})
-    #   opts[:strict] = true
-    #   validate_hash(incoming_hash, validations, opts)
-    # end
-
 
     def validate(param, validations={})
       #NOTE  if validations is nil then it gets coerced into an empty hash
@@ -159,6 +89,7 @@ class HashParams
 
       if param.is_a?(Hash) && block_given?
         #if the param is a hash then the validations are actually options
+       # binding.pry
         return HashParams.new.validate_hash(param, validations, &Proc.new)
       end
       if param.nil? && validations[:default]
