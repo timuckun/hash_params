@@ -16,6 +16,83 @@ class HashParams
   class CoercionError < StandardError
   end
 
+
+
+  def validate_hash(h, options={})
+    #Hash Validation has to be stateful
+
+    @incoming = h
+    @outgoing = OpenStruct.new
+    @options  = options
+
+    @outgoing.validation_errors = OpenStruct.new
+    if block_given?
+      instance_eval(&Proc.new)
+    else
+      #no proc was given. This means pass all values
+      @outgoing = @incoming
+    end
+
+    @outgoing['valid?'] = @outgoing.validation_errors.to_h.empty?
+    @outgoing
+    #default is to raise errors
+    #   raise_errors = opts[:raise_errors].nil? ? true : opts[:raise_errors]
+    #
+    #   #default is strict but if they don't specify strict and the validations are empty then it's false
+    #   strict       = if opts[:strict]
+    #                    opts[:strict]
+    #                  elsif validations.empty?
+    #                    false
+    #                  else
+    #                    true
+    #                  end
+    #
+    #   clean_hash  = {}
+    #   errors_hash = {}
+    #
+
+  end
+
+  def param(key, opts={})
+    begin
+      value   = HashParams.validate(@incoming[key], opts)
+      new_key = opts[:as] || key
+      set_key_value new_key, value, opts[:as]
+    rescue => e
+      @outgoing.validation_errors[key] = [e.to_s, e.backtrace].join("\n")
+      raise e if @options[:raise_errors]
+    end
+  end
+
+  def set_key_value(key, value, as=nil)
+    key = as unless as.nil?
+    #key = key.to_s.to_sym if opts[:symbolize_keys]
+    inject_into_target(opts[:injection_target], key, value) if opts[:injection_target]
+    #inject_into_target(target, key, value) if opts[:make_methods]
+    @outgoing[key]=value
+  end
+
+
+  # def inject_into_target(target, var_name, val)
+  #   if target
+  #     #for read write methods
+  #     target.singleton_class.class_eval do
+  #       attr_accessor var_name;
+  #     end
+  #     target.send("#{var_name}=", val)
+  #   end
+  # end
+
+  def inject_into_target(target, var_name, val)
+    #only do read
+    target.singleton_class.module_eval do
+      define_method var_name.to_s.to_sym do
+        val
+      end
+    end
+  end
+
+  ##### CLass methods
   class << self
     # @incoming_hash = {}
 
@@ -75,65 +152,15 @@ class HashParams
     #   validate_hash(incoming_hash, validations, opts)
     # end
 
-    def param(key, options={})
-
-
-      begin
-        value   = validate(@validate_hash_incoming[key], options)
-        new_key = options[:as] || key
-
-        @validate_hash_outgoing[new_key] = value
-      rescue => e
-        @validate_hash_outgoing.validation_errors[key] = [e.to_s, e.backtrace].join("\n")
-        raise e if @validate_hash_options[:raise_errors]
-      end
-      binding.pry if key == :proc_default
-    end
-
-    def validate_hash(h, options={})
-      @validate_hash_incoming                   = h
-      @validate_hash_outgoing                   = OpenStruct.new
-      @validate_hash_outgoing.validation_errors = OpenStruct.new
-      @validate_hash_options                    = options
-      if block_given?
-        instance_eval(&Proc.new)
-
-      else
-        #no proc was given. This means pass all values
-        @validate_hash_outgoing = @validate_hash_incoming
-
-        # @incoming_hash.each do |k, v|
-        #   set_key_value k, v
-        # end
-      end
-
-      @validate_hash_outgoing['valid?'] = @validate_hash_outgoing.validation_errors.to_h.empty?
-      @validate_hash_outgoing
-      #default is to raise errors
-      #   raise_errors = opts[:raise_errors].nil? ? true : opts[:raise_errors]
-      #
-      #   #default is strict but if they don't specify strict and the validations are empty then it's false
-      #   strict       = if opts[:strict]
-      #                    opts[:strict]
-      #                  elsif validations.empty?
-      #                    false
-      #                  else
-      #                    true
-      #                  end
-      #
-      #   clean_hash  = {}
-      #   errors_hash = {}
-      #
-
-    end
 
     def validate(param, validations={})
       #NOTE  if validations is nil then it gets coerced into an empty hash
       #      The consequence of this is that the value gets passed back unchanged
 
-      #if param.is_a?(Hash) && block_given?
-      #if the param is a hash then the validations are actually options
-      #end
+      if param.is_a?(Hash) && block_given?
+        #if the param is a hash then the validations are actually options
+        return HashParams.new.validate_hash(param, validations, &Proc.new)
+      end
       if param.nil? && validations[:default]
         param = validations[:default].respond_to?(:call) ? validations[:default].call(self) : validations[:default]
       end
@@ -319,35 +346,6 @@ class HashParams
       end
     end
 
-
-    def set_key_value(target, key, value, opts={})
-      as  = opts[:as]
-      key = as unless as.nil?
-      key = key.to_s.to_sym if opts[:symbolize_keys]
-      inject_into_target(opts[:injection_target], key, value) if opts[:injection_target]
-      inject_into_target(target, key, value) if opts[:make_methods]
-      binding.pry if key == 'valid?'
-      target[key]=value
-    end
-
-    # def inject_into_target(target, var_name, val)
-    #   if target
-    #     #for read write methods
-    #     target.singleton_class.class_eval do
-    #       attr_accessor var_name;
-    #     end
-    #     target.send("#{var_name}=", val)
-    #   end
-    # end
-
-    def inject_into_target(target, var_name, val)
-      #only do read
-      target.singleton_class.module_eval do
-        define_method var_name.to_s.to_sym do
-          val
-        end
-      end
-    end
 
     # if target
     #   #for read write methods
