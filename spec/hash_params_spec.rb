@@ -1,13 +1,14 @@
 require_relative 'spec_helper'
 
 
+
 describe HashParams do
   let(:v) { HashParams }
 
   it 'raises error if required and missing' do
     proc {
       v.validate(nil, required: true)
-    }.must_raise HashParams::ValidationError
+    }.must_raise HashParams::Validator::ValidationError
   end
   it 'runs multiple coersions' do
     v.validate('1aaa2', coerce: [lambda { |o| o.gsub('a', '') }, :to_i, Float]).must_equal 12.0
@@ -27,7 +28,7 @@ describe HashParams do
       v.validate('is_this_valid?') do |v|
         v == 'Failed_proc_validation'
       end
-    }.must_raise HashParams::ValidationError
+    }.must_raise HashParams::Validator::ValidationError
   end
 
   it 'verifies numbers with common params' do
@@ -66,7 +67,7 @@ describe HashParams do
     r = v.validate(
         {
             ignored:          "this will be ignored because it's not mentioned",
-            to_be_renamed:    :to_be_renamed,
+            to_be_renamed:    :renamed_value,
             integer_coercion: "1",
             proc_validation:  "is_this_valid?",
             recursive:        {}
@@ -86,7 +87,7 @@ describe HashParams do
     (r.valid?).must_equal false
     r[:ignored].must_be_nil
     # r[:proc_default].must_equal 5
-    r[:renamed].must_equal :to_be_renamed
+    r[:renamed].must_equal :renamed_value
     #recursive checking
     r[:recursive][:wasnt_here_before].must_equal true
 
@@ -96,7 +97,7 @@ describe HashParams do
 
     r.validation_errors.size.must_equal 2
     r.validation_errors[0].must_equal "Error processing key 'doesnt_exist': Required Parameter missing and has no default specified"
-    r.validation_errors[1].must_equal "Error processing key 'proc_validation': is_this_valid? failed validation using proc"
+    r.validation_errors[1][0..38].must_equal "Error processing key 'proc_validation':"
 
   end
 end

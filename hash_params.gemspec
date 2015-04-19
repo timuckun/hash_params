@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../lib/hash_params', __FILE__)
+require  File.dirname(__FILE__) + '/lib/hash_params'
 
 Gem::Specification.new do |s|
   s.name        = 'hash_params'
