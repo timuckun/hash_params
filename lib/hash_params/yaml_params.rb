@@ -1,6 +1,6 @@
 module YamlParams
 
-  ENVIRONMENT = ENV['YAML_PARAMS_ENV'] || HashParams::ENVIRONMENT
+  ENVIRONMENT = ENV['YAML_PARAMS_ENV'] ||  (defined?(HashParams)  &&  HashParams::ENVIRONMENT) ||  'development'
 
   def self.autoconfig(opts={})
 

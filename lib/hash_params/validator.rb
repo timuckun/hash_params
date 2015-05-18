@@ -1,59 +1,54 @@
 module HashParams
-
-
   module Validator
 
     class ValidationError < StandardError
     end
+
     class CoercionError < StandardError
     end
 
-    def var
-      @parent = code.binding.eval 'self'
-       binding.pry
+    def with_binding(&code)
+      BindingValidator.new.with_binding(&code)
     end
 
-    def validate(param, validations={})
+    def validate(param, type, validations={})
 
-
-      #NOTE  if validations is nil then it gets coerced into an empty hash
-      #      The consequence of this is that the value gets passed back unchanged
-
-      #hashes are special and have to be handled statefully
-      if param.is_a?(Hash)
-        if block_given?
-          #if the param is a hash then the validations are actually options
-          return HashParams::HashValidator.new.validate_hash(param, validations, &Proc.new)
-        else
-          return HashParams::HashValidator.new.validate_hash(param, validations)
-        end
-      end
+      coercions = Array(validations[:coerce]) << type
 
       if param.nil? && validations[:default]
         param = validations[:default].respond_to?(:call) ? validations[:default].call() : validations[:default]
       end
 
-      if block_given?
-        return param if yield(param, validations)
-        #if the block didn't return a true value raise the error
-        raise ValidationError.new("Unable to validate #{param} with given block")
+      #if there is a :validate lambda run that too
+      if validations[:validate] && validations[:validate].respond_to?(:call)
+        param = validations.delete(:validate).call(param)
       end
 
-#don't bother with the rest if required parameter is missing
+      if block_given? && !param.is_a?(Hash)
+        param = yield(param, validations)
+      end
+
+      #  do all coercion and transformation first there could be an array of coersions they will be run in order
+      coercions.each do |c|
+        param = coerce(param, c, validations)
+      end
+
+      if param.is_a?(Hash)
+        param = if block_given?
+                  HashParams::HashValidator.new.validate_hash(param, validations, &Proc.new)
+                else
+                  HashParams::HashValidator.new.validate_hash(param, validations)
+                end
+      end
+
+      #don't bother with the rest if required parameter is missing
       if validations[:required] && param.nil?
         raise ValidationError.new('Required Parameter missing and has no default specified')
       end
-#do all coercion and transformation first there could be an array of coersions they will be run in order
 
-      Array(validations[:coerce]).each do |c|
-        param = coerce(param, c, validations)
-      end
       error = nil
       validations.each do |key, value|
-
         error = case key
-                  when :validate
-                    "#{param.to_s} failed validation using proc" if value.respond_to?(:call) && !value.call(param)
                   when :blank
                     'Parameter cannot be blank' if !value && (param.nil? || (param.respond_to?(:empty) && param.empty)) #)!value && blank?(value)
                   when :format
@@ -74,21 +69,21 @@ module HashParams
                   else
                     nil
                 end
-
       end
+
       raise ValidationError.new(error) if error
       param
     end
+
+    private
 
     def coerce(val, type, opts={})
 
       # exceptions bubble up
       #order is important
 
-      #why would anyone want to coerce to nil? If they want il they get nil
-      return nil if type.nil?
-
-      #return val if type.nil? || val.nil?
+      #if type is nil just return the object
+      return val if type.nil?
 
       #two special types of transforms
       #There is no Boolean type so we handle them special
@@ -120,9 +115,5 @@ module HashParams
 
       raise CoercionError("Unable to  coerce #{val} to #{type}")
     end
-
-    #Shortcut?
-    alias_method :v, :validate
-
   end
 end
