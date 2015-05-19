@@ -1,23 +1,25 @@
 module YamlParams
 
-  ENVIRONMENT = ENV['YAML_PARAMS_ENV'] ||  (defined?(HashParams)  &&  HashParams::ENVIRONMENT) ||  'development'
+  ENVIRONMENT = ENV['YAML_PARAMS_ENV'] || (defined?(HashParams) && HashParams::ENVIRONMENT) || 'development'
 
   def self.autoconfig(opts={})
 
-    script_name = File.basename($0)
-    script_dir  = File.dirname($0)
-    home_dir    = File.expand_path('~')
-    host_name   = Socket.gethostname
+    script_name        = File.basename($0)
+    script_dir         = File.dirname($0)
+    home_dir           = File.expand_path('~')
+    host_name          = Socket.gethostname
+    special_file_names = opts.delete(:files)
+    special_file_names = Array(special_file_names && special_file_names.is_a?(String) && special_file_names.split(','))
+    special_roots      = opts.delete(:roots)
+    special_roots      = Array(special_roots && special_roots.is_a?(String) && special_roots.split(','))
+    app_name           = opts.delete(:app_name) || script_name
+    env                = opts.delete(:env) || opts.delete(:environment) || ENVIRONMENT
+    generated_hash     = {}
+    all_file_names     = []
 
-    files     = opts.delete(:files)
-    files     = Array(files && files.is_a?(String) && files.split(','))
-    roots     = opts.delete(:roots)
-    roots     = Array(roots && roots.is_a?(String) && roots.split(','))
-    app_name  = opts.delete(:app_name) || script_name
-    env       = opts.delete(:env) || opts.delete(:environment) || ENVIRONMENT
 
     #Sequence is important when constructing this list as later files will override the earlier ones
-    all_files = %W(
+    generic_file_names = %W(
                   settings.yml
                   config.yml
                    default.yml
@@ -32,10 +34,9 @@ module YamlParams
                   config.local_#{env}.yml
     )
     #prepend the app name to the default file names
-    all_files += all_files.map { |f| "#{app_name}_#{f}" }
-    all_files += files
+    app_file_names     = generic_file_names.map { |f| "#{app_name}_#{f}" }
 
-    all_roots = [
+    default_roots = [
         script_dir,
         File.join('/etc', app_name.to_s),
         File.join('/usr', 'local', 'etc', app_name.to_s),
@@ -46,27 +47,35 @@ module YamlParams
         File.join(script_dir, 'settings')
     ]
     if defined?(Rails)
-      all_roots << Rails.root.join('config')
+      default_roots << Rails.root.join('config')
     end
-    all_roots += roots
-    h         = {}
 
-    all_roots.each do |root|
-      all_files.each do |fname|
-        file = File.join(root, fname)
-        h    = deep_merge(h, hash_from_yaml_file(file)) if File.exists?(file)
+
+    #process the  /etc/app_name* files
+    app_file_names.each do |fname|
+      all_file_names << File.join('/etc', fname)
+    end
+    #now process the default roots which will override the above
+    (default_roots + special_roots).each do |root|
+      (generic_file_names + app_file_names + special_file_names).each do |fname|
+        all_file_names << File.join(root, fname)
       end
     end
 
+    all_file_names.each do |file|
+      generated_hash = deep_merge(generated_hash, hash_from_yaml_file(file)) if File.exists?(file)
+    end
+
     if block_given?
-      HashParams::HashValidator.new.validate_hash(h, opts, &Proc.new)
+      HashParams::HashValidator.new.validate_hash(generated_hash, opts, &Proc.new)
     else
-      HashParams::HashValidator.new.validate_hash(h, opts)
+      HashParams::HashValidator.new.validate_hash(generated_hash, opts)
     end
   end
 
-  def self.hash_from_yaml_file(filename, env=ENVIRONMENT)
-    r = File.exists?(filename) ? YAML::load(ERB.new(File.read(filename)).result) : {}
+  def self.hash_from_yaml_file(filename, env=nil)
+    env ||= ENVIRONMENT
+    r   = File.exists?(filename) ? YAML::load(ERB.new(File.read(filename)).result) : {}
     r[env] || r
   end
 

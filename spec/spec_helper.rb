@@ -11,14 +11,3 @@ require 'minitest/spec'
 require 'minitest/autorun'
 require 'pry'
 
-#require 'minitest/mock'
-
-# require 'rack/test'
-#
-# require 'dummy/app'
-#
-# def app
-#   App
-# end
-#
-# #include Rack::Test::Methods
