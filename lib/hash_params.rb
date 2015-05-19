@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 require 'yaml'
 require 'erb'
 require 'socket'
