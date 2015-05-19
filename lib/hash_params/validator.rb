@@ -11,7 +11,7 @@ module HashParams
       BindingValidator.new.with_binding(&code)
     end
 
-    def validate(param, type, validations={})
+    def validate(param, type=nil, validations={})
 
       coercions = Array(validations[:coerce]) << type
 
@@ -77,7 +77,7 @@ module HashParams
 
     private
 
-    def coerce(val, type, opts={})
+    def coerce(val, type=nil, opts={})
 
       # exceptions bubble up
       #order is important
@@ -104,6 +104,7 @@ module HashParams
       return type.call(val) if type.respond_to?(:call)
       #nothing but simple types left
       return val if val.is_a?(type)
+      return val.to_s.to_sym if type == Symbol
       return Integer(val) if type == Integer
       return Float(val) if type == Float
       return String(val) if type == String
