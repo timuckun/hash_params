@@ -9,6 +9,7 @@ describe HashParams do
       v.validate(nil, nil, required: true)
     }.must_raise HashParams::Validator::ValidationError
   end
+
   it 'runs multiple coersions' do
     v.validate('1aaa2', Float, coerce: [lambda { |o| o.gsub('a', '') }, :to_i]).must_equal(12.0)
   end
