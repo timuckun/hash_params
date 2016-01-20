@@ -33,19 +33,26 @@ module HashParams
 
       @incoming = h
       @outgoing = HPHash.new
-      @options  = options
+      @options = options
 
       if block_given?
         instance_eval(&Proc.new)
       else
         #no proc was given this means just pass the hash back as is
-        @outgoing = @incoming
+        if @options.empty?
+          @outgoing = @incoming
+        else
+          h.each do |k, v|
+            key k, v.class, @options
+          end
+        end
+
       end
       @outgoing
     end
 
     def key(hash_key, type, opts={})
-      value     = @incoming[hash_key] || @incoming[hash_key.to_s]
+      value = @incoming[hash_key] || @incoming[hash_key.to_s]
       # if a block is given to the param then it's a recursive call
       # recursive calls can only be done with a hash
       new_value = if value.is_a?(Hash)
@@ -58,7 +65,7 @@ module HashParams
                   else
                     HashParams.validate value, type, opts
                   end
-      hash_key  = opts[:as] if opts[:as]
+      hash_key = opts[:as] if opts[:as]
       @outgoing.set_key_value(hash_key, new_value, @options[:symbolize_keys], @options[:make_methods])
       new_value
     rescue => e
@@ -66,6 +73,7 @@ module HashParams
       raise e if @options[:raise_errors]
       nil
     end
+
     alias_method :param, :key
   end
 end
