@@ -48,6 +48,9 @@ module YamlParams
     ]
     if defined?(Rails)
       default_roots << Rails.root.join('config')
+      default_roots << Rails.root.join('config', env)
+      default_roots << Rails.root.join('config', 'settings')
+      default_roots << Rails.root.join('config', 'settings', env)
     end
 
 
