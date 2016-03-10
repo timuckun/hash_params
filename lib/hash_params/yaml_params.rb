@@ -4,18 +4,18 @@ module YamlParams
 
   def self.autoconfig(opts={})
 
-    script_name        = File.basename($0)
-    script_dir         = File.dirname($0)
-    home_dir           = File.expand_path('~')
-    host_name          = Socket.gethostname
+    script_name = File.basename($0)
+    script_dir = File.dirname($0)
+    home_dir = File.expand_path('~')
+    host_name = Socket.gethostname
     special_file_names = opts.delete(:files)
     special_file_names = Array(special_file_names && special_file_names.is_a?(String) && special_file_names.split(','))
-    special_roots      = opts.delete(:roots)
-    special_roots      = Array(special_roots && special_roots.is_a?(String) && special_roots.split(','))
-    app_name           = opts.delete(:app_name) || script_name
-    env                = opts.delete(:env) || opts.delete(:environment) || ENVIRONMENT
-    generated_hash     = {}
-    all_file_names     = []
+    special_roots = opts.delete(:roots)
+    special_roots = Array(special_roots && special_roots.is_a?(String) && special_roots.split(','))
+    app_name = opts.delete(:app_name) || script_name
+    env = opts.delete(:env) || opts.delete(:environment) || ENVIRONMENT
+    generated_hash = {}
+    all_file_names = []
 
 
     #Sequence is important when constructing this list as later files will override the earlier ones
@@ -34,24 +34,31 @@ module YamlParams
                   config.local_#{env}.yml
     )
     #prepend the app name to the default file names
-    app_file_names     = generic_file_names.map { |f| "#{app_name}_#{f}" }
+    app_file_names = generic_file_names.map { |f| "#{app_name}_#{f}" }
 
-    default_roots = [
-        script_dir,
-        File.join('/etc', app_name.to_s),
-        File.join('/usr', 'local', 'etc', app_name.to_s),
-        File.join(home_dir, 'etc', app_name.to_s),
-        File.join(home_dir, ".#{app_name}"),
-        File.join(home_dir, '.hash_params', app_name.to_s),
-        File.join(script_dir, 'config'),
-        File.join(script_dir, 'settings')
-    ]
-    if defined?(Rails)
-      default_roots << Rails.root.join('config')
-      default_roots << Rails.root.join('config', env)
-      default_roots << Rails.root.join('config', 'settings')
-      default_roots << Rails.root.join('config', 'settings', env)
-    end
+    default_roots = if defined?(Rails)
+                      [
+                          Rails.root.join('config'),
+                          Rails.root.join('config', env),
+                          Rails.root.join('config', 'settings'),
+                          Rails.root.join('config', 'settings', env),
+                          Rails.root.join('config', 'environments'),
+                          Rails.root.join('config', 'environments', env),
+                          Rails.root.join('config', 'config'),
+                          Rails.root.join('config', 'config', env)
+                      ]
+                    else
+                      [
+                          script_dir,
+                          File.join('/etc', app_name.to_s),
+                          File.join('/usr', 'local', 'etc', app_name.to_s),
+                          File.join(home_dir, 'etc', app_name.to_s),
+                          File.join(home_dir, ".#{app_name}"),
+                          File.join(home_dir, '.hash_params', app_name.to_s),
+                          File.join(script_dir, 'config'),
+                          File.join(script_dir, 'settings')
+                      ]
+                    end
 
 
     #process the  /etc/app_name* files
@@ -78,8 +85,19 @@ module YamlParams
 
   def self.hash_from_yaml_file(filename, env=nil)
     env ||= ENVIRONMENT
-    r   = File.exists?(filename) ? YAML::load(ERB.new(File.read(filename)).result) : {}
-    r[env] || r
+    contents = ERB.new(File.read(filename)).result if File.exists?(filename)
+
+    return {} if contents.blank?
+
+    r = YAML::load(contents)
+
+    #yaml load returns false for empty files
+    if r
+      r[env] || r
+    else
+      {}
+    end
+
   end
 
   def self.deep_merge(hash, other_hash)
