@@ -87,7 +87,7 @@ module YamlParams
     env ||= ENVIRONMENT
     contents = ERB.new(File.read(filename)).result if File.exists?(filename)
 
-    return {} if contents.blank?
+    return {} if contents.nil? || contents.empty?
 
     r = YAML::load(contents)
 
