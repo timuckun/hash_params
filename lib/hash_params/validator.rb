@@ -24,6 +24,11 @@ module HashParams
         param = validations.delete(:validate).call(param)
       end
 
+      #don't bother with the rest if required parameter is missing
+      if validations[:required] && param.nil?
+        raise ValidationError.new('Required Parameter missing and has no default specified')
+      end
+
       if block_given? && !param.is_a?(Hash)
         param = yield(param, validations)
       end
@@ -70,7 +75,7 @@ module HashParams
                     nil
                 end
       end
-
+      error = validations[:errmsg] || error
       raise ValidationError.new(error) if error
       param
     end
