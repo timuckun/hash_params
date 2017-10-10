@@ -50,7 +50,7 @@ module HashParams
       if validations[:required] && param.nil?
         raise ValidationError.new('Required Parameter missing and has no default specified')
       end
-
+      errors = []
       error = nil
       validations.each do |key, value|
         error = case key
@@ -74,9 +74,14 @@ module HashParams
                   else
                     nil
                 end
+        if error
+          error = validations[:errmsg] || error
+          errors << error
+        end
+
       end
-      error = validations[:errmsg] || error
-      raise ValidationError.new(error) if error
+
+      raise ValidationError.new(errors.join("\n")) unless errors.empty?
       param
     end
 
@@ -117,7 +122,7 @@ module HashParams
       return Time.parse(val) if type == Time
       return DateTime.parse(val) if type == DateTime
       return Array(val.split(opts[:delimiter] || ',')) if type == Array
-      return Hash[val.gsub(/[{}]/, '').gsub('}', '').split(opts[:delimiter] || ',').map { |c| c.split(opts[:separator] ||':').map { |i| i.strip } }] if type == Hash
+      return Hash[val.gsub(/[{}]/, '').gsub('}', '').split(opts[:delimiter] || ',').map {|c| c.split(opts[:separator] ||':').map {|i| i.strip}}] if type == Hash
 
       raise CoercionError("Unable to  coerce #{val} to #{type}")
     end
